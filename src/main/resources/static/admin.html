@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Question Management</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 70%;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.12);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0b3d91;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #333;
+        }
+
+        .format-box {
+            background: #f4f7ff;
+            border-left: 5px solid #0b3d91;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 16px;
+            margin-top: 12px;
+            margin-right: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #0b3d91;
+            color: white;
+        }
+
+        .question-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .delete-btn {
+            background: #c62828;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Admin Question Management</h1>
+
+    <!-- 🔥 FORMAT GUIDE (THIS IS WHAT YOU WANTED) -->
+    <h3> Question Format Guide</h3>
+
+    <div class="format-box">
+<b>Paste questions in this format:</b><br><br>
+
+Q: What is Java?<br>
+A: Programming Language<br>
+B: Database<br>
+C: Operating System<br>
+D: Browser<br>
+ANS: Programming Language<br><br>
+
+---<br><br>
+
+Q: What is JVM?<br>
+It allows Java programs to run on any operating system.<br>
+A: Java Virtual Machine<br>
+B: Java Variable Model<br>
+C: Java Visual Machine<br>
+D: None<br>
+ANS: Java Virtual Machine<br><br>
+
+<b>Rules:</b><br>
+&#10004; Use proper format<br>
+&#10004; Separate with ---<br>
+&#10004; Answer must match exactly
+    </div>
+
+    <!-- INPUT AREA -->
+    <textarea id="data" placeholder="Paste questions here..."></textarea>
+
+    <br>
+
+    <button onclick="addQuestion()">Add Questions</button>
+    <button onclick="loadQuestions()">View Questions</button>
+
+    <div id="list"></div>
+
+</div>
+
+<script>
+
+function addQuestion() {
+
+    let input = document.getElementById("data").value.trim();
+
+    if (input === "") {
+        alert("Enter questions");
+        return;
+    }
+
+    let blocks = input.split("---");
+    let requests = [];
+
+    blocks.forEach(block => {
+
+        let lines = block.split("\n").map(x => x.trim()).filter(x => x !== "");
+
+        let question = "";
+        let options = ["", "", "", ""];
+        let answer = "";
+        let current = "";
+
+        lines.forEach(line => {
+
+            if (line.startsWith("Q:")) {
+                current = "Q";
+                question += line.substring(2).trim();
+            }
+            else if (line.startsWith("A:")) {
+                current = "A";
+                options[0] += line.substring(2).trim();
+            }
+            else if (line.startsWith("B:")) {
+                current = "B";
+                options[1] += line.substring(2).trim();
+            }
+            else if (line.startsWith("C:")) {
+                current = "C";
+                options[2] += line.substring(2).trim();
+            }
+            else if (line.startsWith("D:")) {
+                current = "D";
+                options[3] += line.substring(2).trim();
+            }
+            else if (line.startsWith("ANS:")) {
+                answer += line.substring(4).trim();
+            }
+            else {
+                if (current === "Q") question += " " + line;
+                else if (current === "A") options[0] += " " + line;
+                else if (current === "B") options[1] += " " + line;
+                else if (current === "C") options[2] += " " + line;
+                else if (current === "D") options[3] += " " + line;
+            }
+        });
+
+        if (question && options[0] && options[1] && options[2] && options[3] && answer) {
+
+            let q = {
+                question: question.trim(),
+                option1: options[0].trim(),
+                option2: options[1].trim(),
+                option3: options[2].trim(),
+                option4: options[3].trim(),
+                correctAnswer: answer.trim()
+            };
+
+            requests.push(fetch("/admin/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(q)
+            }));
+        }
+    });
+
+    Promise.all(requests)
+        .then(() => {
+            alert("Questions added successfully");
+            document.getElementById("data").value = "";
+            loadQuestions();
+        })
+        .catch(() => alert("Error adding questions"));
+}
+
+function loadQuestions() {
+
+    fetch("/admin/questions")
+    .then(res => res.json())
+    .then(data => {
+
+        let html = "";
+
+        if (!data.length) {
+            html = "<p>No questions found</p>";
+        }
+
+        data.forEach(q => {
+            html += `
+                <div class="question-box">
+                    <b>${q.id}. ${q.question}</b><br>
+                    ${q.option1} | ${q.option2} | ${q.option3} | ${q.option4}<br>
+                    <b>Answer:</b> ${q.correctAnswer}<br>
+                    <button class="delete-btn" onclick="deleteQuestion(${q.id})">Delete</button>
+                </div>
+            `;
+        });
+
+        document.getElementById("list").innerHTML = html;
+    })
+    .catch(() => alert("Could not load questions"));
+}
+
+function deleteQuestion(id) {
+
+    fetch("/admin/delete/" + id, {
+        method: "DELETE"
+    })
+    .then(() => {
+        alert("Deleted");
+        loadQuestions();
+    })
+    .catch(() => alert("Delete failed"));
+}
+
+</script>
+
+</body>
+</html>
