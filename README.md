@@ -74,9 +74,8 @@ These endpoints are intended for internal/admin use only. They help in monitorin
 ## How Scoring Works
 - Each correct answer = 1 mark
 - Final score is calculated based on correct answers
-- Passing Criteria:
-  Pass: score ≥ 60%
-  
+- Passing Criteria:  
+  Pass: score ≥ 60%  
   Fail: score < 60%
 
 ---
