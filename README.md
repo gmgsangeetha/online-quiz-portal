@@ -14,7 +14,13 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
 - Timer-based quiz (30 seconds per question)
 - Auto-submit when time ends
 - Navigation using Previous / Next buttons
-- Instant result display after submission
+- Instant result display after quiz submission
+- Displays total questions, correct answers, incorrect answers, and status(pass/fail)
+- Tracks total time taken by the student to attempt the quiz
+- Students can review answers using:
+  - "Show Correct" button
+  - "Show Incorrect" button
+- Automatic result evaluation and scoring
 
 ---
 
@@ -29,43 +35,49 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
 
 ## Admin Question Management
 
-Questions can be added in bulk using the following format:
-Q: Question text
-A: Option 1
-B: Option 2
-C: Option 3
-D: Option 4
-ANS: Correct Answer
+Admin can add multiple questions in bulk using a structured format, allowing faster question entry without manual one-by-one insertion.
 
-Separate multiple questions using:
+### Bulk Upload Format:
+ Q: Question text  
+ A: Option 1  
+ B: Option 2  
+ C: Option 3  
+ D: Option 4  
+ ANS: Correct Answer  
+
+Multiple questions can be separated using ---
 
 ---
 
 ## Result Management
 
-Results are stored in the database after each attempt.
+The system stores quiz results after each attempt, enabling easy tracking of user performance.
 
-Each result contains:
-- Username
-- Score
-- Total Questions
-- Pass / Fail Status
-- Attempt Time
+Each result includes:
+- Username  
+- Score  
+- Total Questions  
+- Pass / Fail Status  
+- Attempt Timestamp  
 
-### Result Access
-- `/admin/results` → View all attempt results
-- `/admin/clear-results` → Delete all stored results
+## Admin Controls (Restricted Access)
 
-(Admin endpoints are intended for controlled/internal use)
+- `/admin/results` → View all quiz attempt results  
+- `/admin/clear-results` → Delete all stored results  
+
+These endpoints are intended for internal/admin use only. They help in monitoring quiz attempts and managing results **without requiring direct database access**.
+
+⚠️ Note: In a production environment, these endpoints should be protected using proper authentication and authorization to prevent unauthorized access, especially for sensitive operations like deleting all results.
 
 ---
 
 ## How Scoring Works
 - Each correct answer = 1 mark
 - Final score is calculated based on correct answers
-- Passing criteria:
-- Pass if score >= 60% of total questions
-Fail otherwise
+- Passing Criteria:
+  Pass: score ≥ 60%
+  
+  Fail: score < 60%
 
 ---
 
@@ -74,13 +86,39 @@ Fail otherwise
 - Auto-submit happens when timer reaches zero
 
 ---
-
 ## Technologies Used
-- Java
-- Spring Boot
-- REST API
-- HTML, CSS, JavaScript
-- MySQL / TiDB Cloud
+
+- Frontend: HTML, CSS, JavaScript  
+- Backend: Java, Spring Boot  
+- Database: MySQL  
+- ORM: Spring Data JPA (Hibernate)  
+- IDE: Eclipse (Java EE IDE)   
+
+---
+
+## Architecture
+
+This project follows a simple client–server architecture.
+
+Frontend (HTML/CSS/JavaScript) communicates with Backend (Spring Boot REST APIs), and data is stored in a MySQL-compatible database.
+
+### System Flow
+
+Frontend (HTML, CSS, JavaScript)
+        ↓
+REST API (Spring Boot Controllers)
+        ↓
+Service Layer (Business Logic)
+        ↓
+Repository Layer (Spring Data JPA)
+        ↓
+Database (MySQL / TiDB Cloud)
+
+### Key Points
+- Frontend handles UI, quiz navigation, and timer logic
+- Backend handles question fetching, scoring, and result processing
+- Database stores questions and quiz results
+- Communication happens through REST APIs (JSON format)
 
 ---
 
@@ -104,22 +142,37 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 
 ---
 
-## Summary
-This project demonstrates:
-- Full-stack development with Spring Boot
-- REST API integration
-- Dynamic quiz system with timer
-- Bulk question upload feature
-- Result tracking with admin control
-- Cloud deployment using Render and TiDB Cloud
-
----
-
 ## Note
-This project does not include authentication system.  
+
+This project does not include an authentication system.
+
 Users are identified using name input only.
 
----
+The system allows quiz reattempts on page refresh.
 
-## Author
-Built as a learning project to demonstrate full-stack web development skills.
+---
+## Future Scope
+
+- Add secure login and user authentication
+- Prevent reattempts using server-side session tracking
+- Add timer pause/resume protection
+- Store full attempt history per user
+- Improve UI with leaderboard and analytics
+- Add difficulty levels and categories for quizzes
+
+---
+## 🔗 Live Project Links
+
+-  Student Quiz Portal: https://online-quiz-portal-5pax.onrender.com/
+-  Admin Dashboard: https://online-quiz-portal-5pax.onrender.com/admin.html
+
+---
+## Purpose of the Project
+
+I have built a basic Online Quiz Portal using Spring Boot to gain exposure to modern backend development.
+
+This project uses core Spring Boot concepts such as RESTful APIs (@RestController, @GetMapping, @PostMapping) and dependency injection (@Autowired).
+
+It also includes Spring Data JPA for database operations with MySQL and a simple service-layer for business logic.
+
+Overall, this project focuses on fundamental Spring Boot concepts and CRUD-based backend development with frontend integration.
