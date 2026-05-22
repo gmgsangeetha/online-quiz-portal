@@ -218,10 +218,11 @@ function loadQuestions() {
             html = "<p>No questions found</p>";
         }
 
-        data.forEach(q => {
+        data.forEach((q, index) => {
+
             html += `
                 <div class="question-box">
-                    <b>${q.id}. ${q.question}</b><br>
+                    <b>${index + 1}. ${q.question}</b><br>
                     ${q.option1} | ${q.option2} | ${q.option3} | ${q.option4}<br>
                     <b>Answer:</b> ${q.correctAnswer}<br>
                     <button class="delete-btn" onclick="deleteQuestion(${q.id})">Delete</button>
