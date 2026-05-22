@@ -175,3 +175,8 @@ This project uses core Spring Boot concepts such as RESTful APIs (@RestControlle
 It also includes Spring Data JPA for database operations with MySQL and a simple service-layer for business logic.
 
 Overall, this project focuses on fundamental Spring Boot concepts and CRUD-based backend development with frontend integration.
+
+---
+
+## GitHub Repository
+[Online Quiz Portal](https://github.com/gmgsangeetha/online-quiz-portal)
