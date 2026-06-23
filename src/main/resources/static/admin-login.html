@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 320px;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        h2 {
+            color: #0b3d91;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0b3d91;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #062c6e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Admin Portal Login</h2>
+    <input type="text" id="username" placeholder="Enter Username">
+    <input type="password" id="password" placeholder="Enter Password">
+    <button onclick="loginAdmin()">Login</button>
+</div>
+
+<script>
+function loginAdmin() {
+    let u = document.getElementById("username").value;
+    let p = document.getElementById("password").value;
+
+    if (u.trim() === "" || p.trim() === "") {
+        alert("Please enter both fields");
+        return;
+    }
+
+    fetch("/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // Required to pass the secure session cookie to Spring Boot
+        body: JSON.stringify({ username: u, password: p })
+    })
+    .then(res => {
+        if (res.ok) {
+            window.location.href = "admin.html"; // Redirects to question management panel on success
+        } else {
+            alert("Invalid username or password");
+        }
+    })
+    .catch(() => alert("Error connecting to server"));
+}
+</script>
+
+</body>
+</html>

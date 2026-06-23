@@ -198,13 +198,12 @@ h1 {
         <li> Each question carries 1 mark</li>
         <li> No negative marking</li>
         <li> You can move using Previous / Next buttons</li>
-        <li> Do not refresh, close, or go back during the test</li>
+        <li>If you accidentally refresh the page, your quiz progress will be restored automatically</li>
         <li> The test will be submitted automatically when time ends</li>
         <li> Click Submit after answering all questions</li>
         <li> Results will be displayed immediately after submission</li>
     </ul>
 </div>
-
 
         <button class="start-btn" onclick="startQuiz()">Start Examination</button>
 
@@ -236,7 +235,86 @@ let endTime;
 let timeTaken;
 let timeLeft;
 
-/* ===================== START ===================== */
+/* ===================== TRAP BROWSER NAVIGATION BUTTONS ===================== */
+function trapBrowserNavigation() {
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.pushState(null, null, location.href);
+    };
+}
+trapBrowserNavigation();
+setInterval(trapBrowserNavigation, 200);
+
+/* ===================== RESTORE STATE ON REFRESH ===================== */
+window.onload = function () {
+    let alreadySubmitted = sessionStorage.getItem("examIsDone");
+    
+    // REFRESH LOCK: Restores results screen on page refresh
+    if (alreadySubmitted === "true") {
+        document.getElementById("startPage").style.display = "none";
+        userName = sessionStorage.getItem("userName");
+        timeTaken = sessionStorage.getItem("timeTaken");
+        window.resultData = JSON.parse(sessionStorage.getItem("resultData"));
+        
+        let data = window.resultData;
+        document.getElementById("quizArea").innerHTML = `
+            <div class="question-box">
+                <h2>Result Summary</h2>
+                <p><b>User:</b> ${userName}</p>
+                <p><b>Time Taken:</b> ${timeTaken}</p>
+                <p><b>Total Questions:</b> ${data.total}</p>
+                <p><b>Correct Answers:</b> ${data.score}</p>
+                <p><b>Incorrect Answers:</b> ${data.total - data.score}</p>
+                <p><b>Status:</b> ${data.status}</p>
+                
+                <button onclick="showCorrect()">Show Correct</button>
+                <button onclick="showIncorrect()">Show Incorrect</button>
+                <br><br>
+                <button onclick="restartQuizPortal()" style="background:#2e7d32; width:100%; font-weight:bold;">Take Quiz Again</button>
+                
+                <div id="reviewArea"></div>
+            </div>
+        `;
+        return;
+    }
+
+    let savedQuestions = sessionStorage.getItem("questions");
+    let savedAnswers = sessionStorage.getItem("answers");
+    let savedCurrent = sessionStorage.getItem("current");
+    let savedTime = sessionStorage.getItem("timeLeft");
+    let savedUser = sessionStorage.getItem("userName");
+    let savedStart = sessionStorage.getItem("startTime");
+
+    if (savedQuestions) questions = JSON.parse(savedQuestions);
+    if (savedAnswers) answers = JSON.parse(savedAnswers);
+    if (savedCurrent) current = parseInt(savedCurrent);
+    if (savedTime) timeLeft = parseInt(savedTime);
+    if (savedUser) userName = savedUser;
+    if (savedStart) startTime = new Date(savedStart);
+
+    // Initial instruction block card metadata parsing setup
+    fetch("/quiz/start?user=guest")
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.length) {
+            let totalQ = data.length;
+            let totalMinutes = Math.ceil((totalQ * 30) / 60);
+            document.getElementById("totalQ").innerText = totalQ;
+            document.getElementById("totalTime").innerText =
+                totalMinutes + (totalMinutes === 1 ? " minute" : " minutes");
+        }
+    }).catch(err => console.log("Initial tracking elements set."));
+
+    // MID-TEST REFRESH PROTECTION
+    if (questions.length > 0 && answers.length > 0) {
+        document.getElementById("startPage").style.display = "none";
+        document.getElementById("timer").style.display = "block";
+        document.getElementById("progressContainer").style.display = "block";
+        renderQuestion();
+        startTimer();
+    }
+};
+/* ===================== START QUIZ ===================== */
 function startQuiz() {
 
     userName = document.getElementById("username").value;
@@ -247,14 +325,11 @@ function startQuiz() {
     }
     startTime = new Date();
     
-
-    fetch("/quiz/start?user=" + userName)
+    fetch("/quiz/start?user=" + encodeURIComponent(userName))
     .then(res => res.json())
     .then(data => {
 
         questions = data;
-       
-       
         timeLeft = questions.length * 30; // 30 seconds per question
 
         if (questions.length === 0) {
@@ -269,19 +344,32 @@ function startQuiz() {
 
         answers = new Array(questions.length).fill("");
 
+        // Caching active test tracking elements safely inside storage memory
+        sessionStorage.setItem("questions", JSON.stringify(questions));
+        sessionStorage.setItem("answers", JSON.stringify(answers));
+        sessionStorage.setItem("current", current);
+        sessionStorage.setItem("timeLeft", timeLeft);
+        sessionStorage.setItem("userName", userName);
+        sessionStorage.setItem("startTime", startTime.toISOString());
+        sessionStorage.setItem("examIsDone", "false");
+
         startTimer();
         renderQuestion();
     });
 }
 
 /* ===================== RENDER ===================== */
+/* ===================== RENDER ===================== */
 function renderQuestion() {
 
     let q = questions[current];
 
+    // ⭐ FIX: Escape brackets in the question text just in case it contains tags
+    let cleanQuestion = q.question.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     let html = `
     <div class="question-box">
-        <h3>Q${current + 1}. ${q.question}</h3>
+        <h3>Q${current + 1}. ${cleanQuestion}</h3>
     `;
 
     let opts = [q.option1, q.option2, q.option3, q.option4];
@@ -290,9 +378,12 @@ function renderQuestion() {
 
         let selected = answers[current] === opt ? "selected" : "";
 
+        // ⭐ FIX: Escape brackets in each option text so tags like <script> print as plain text
+        let cleanOpt = opt.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
         html += `
         <div class="option ${selected}" onclick="selectOption(${index})">
-            ${opt}
+            ${cleanOpt}
         </div>`;
     });
 
@@ -306,15 +397,16 @@ function renderQuestion() {
     `;
 
     document.getElementById("quizArea").innerHTML = html;
-
     updateProgress();
 }
+
 /* ===================== SELECT ===================== */
 function selectOption(index) {
     let q = questions[current];
     let opts = [q.option1, q.option2, q.option3, q.option4];
 
     answers[current] = opts[index];
+    sessionStorage.setItem("answers", JSON.stringify(answers)); // Save current choice instantly mid-exam
     renderQuestion();
 }
 
@@ -322,6 +414,7 @@ function selectOption(index) {
 function next() {
     if (current < questions.length - 1) {
         current++;
+        sessionStorage.setItem("current", current);
         renderQuestion();
     }
 }
@@ -329,19 +422,20 @@ function next() {
 function prev() {
     if (current > 0) {
         current--;
+        sessionStorage.setItem("current", current);
         renderQuestion();
     }
 }
 
 /* ===================== PROGRESS ===================== */
 function updateProgress() {
-
     let percent = ((current + 1) / questions.length) * 100;
     document.getElementById("progressBar").style.width = percent + "%";
 }
 
 /* ===================== TIMER ===================== */
 function startTimer() {
+    clearInterval(timer);
 
     timer = setInterval(() => {
 
@@ -352,6 +446,7 @@ function startTimer() {
             `Time Left: ${m}:${s < 10 ? "0" + s : s} | Question ${current + 1} / ${questions.length}`;
 
         timeLeft--;
+        sessionStorage.setItem("timeLeft", timeLeft); // Cache remaining ticking countdown indices
 
         if (timeLeft < 0) {
             clearInterval(timer);
@@ -365,8 +460,16 @@ function startTimer() {
 function submitQuiz() {
 
     clearInterval(timer);
+    sessionStorage.setItem("examIsDone", "true");
 
-    fetch("/quiz/submit?user=" + userName, {
+    // Clean active exam parameters out from transient state tracking configurations
+    sessionStorage.removeItem("questions");
+    sessionStorage.removeItem("answers");
+    sessionStorage.removeItem("current");
+    sessionStorage.removeItem("timeLeft");
+    sessionStorage.removeItem("startTime");
+
+    fetch("/quiz/submit?user=" + encodeURIComponent(userName), {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(answers)
@@ -377,95 +480,115 @@ function submitQuiz() {
         document.getElementById("timer").style.display = "none";
         document.getElementById("progressContainer").style.display = "none";
 
-        // SAFE STORAGE
         window.resultData = data;
         endTime = new Date();
         timeTaken = Math.floor((endTime - startTime) / 1000);
 
         let mins = Math.floor(timeTaken / 60);
         let secs = timeTaken % 60;
-
         timeTaken = `${mins} min ${secs} sec`;
        
+        sessionStorage.setItem("userName", userName);
+        sessionStorage.setItem("timeTaken", timeTaken);
+        sessionStorage.setItem("resultData", JSON.stringify(data));
+
         document.getElementById("quizArea").innerHTML = `
             <div class="question-box">
-
                 <h2>Result Summary</h2>
-                
                 <p><b>User:</b> ${userName}</p>
                 <p><b>Time Taken:</b> ${timeTaken}</p>
                 <p><b>Total Questions:</b> ${data.total}</p>
                 <p><b>Correct Answers:</b> ${data.score}</p>
                 <p><b>Incorrect Answers:</b> ${data.total - data.score}</p>
                 <p><b>Status:</b> ${data.status}</p>
-
+                
                 <button onclick="showCorrect()">Show Correct</button>
                 <button onclick="showIncorrect()">Show Incorrect</button>
-
+                
+                <br><br>
+                <button onclick="restartQuizPortal()" style="background: #444; width: 100%; margin-top: 10px; font-weight: bold;">Take Quiz Again / Back to Start</button>
+                
                 <div id="reviewArea"></div>
-
             </div>
         `;
     });
 }
 
+/* ===================== CLEAN PORTAL RESTART ===================== */
+function restartQuizPortal() {
+    sessionStorage.clear(); // Instantly purges scores and locks cache states
+    window.location.reload(); // Drops back to a completely clean candidate form landing panel
+}
+
+/* ===================== REVIEW FUNCTIONS ===================== */
 function showCorrect() {
-
     let list = window.resultData?.correctList ?? [];
-
     let html = "<h3>Correct Questions</h3>";
 
     if (list.length === 0) {
         html += "<p>No correct answers</p>";
     } else {
         for (let q of list) {
+            // Checks if the user left it blank
+            let isBlank = !q.userAnswer || q.userAnswer.trim() === "";
+            
+            let studentChoice = isBlank 
+                ? `<span style="color: #c62828; font-weight: bold;">Not Attempted</span>` 
+                : `<span>${q.userAnswer}</span>`;
+
+            // ⭐ FIX: Safety text-escaping so code terms like <script> print instead of execution crashing
+            let cleanQuestion = (q.question || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let cleanChoice = (q.userAnswer || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let cleanCorrect = (q.correctAnswer || q.correctOption || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            let displayChoice = isBlank 
+                ? `<span style="color: #c62828; font-weight: bold;">Not Attempted</span>` 
+                : `<span style="color: #2e7d32;">${cleanChoice}</span>`;
+
             html += `
                 <div class="question-box">
-                    <b>Question:</b> ${q.question}<br>
-                    <b>Your Answer:</b> ${q.userAnswer}<br>
-                    <b>Correct Answer:</b> ${q.correctAnswer}
+                    <b>Question:</b> ${cleanQuestion}<br>
+                    <b>Your Answer:</b> ${displayChoice}<br>
+                    <span style="color: #2e7d32;"><b>Correct Answer:</b> ${cleanCorrect}</span>
                 </div>
             `;
         }
     }
-
     document.getElementById("reviewArea").innerHTML = html;
 }
 
+/* ===================== SHOW INCORRECT ===================== */
 function showIncorrect() {
-
     let list = window.resultData?.incorrectList ?? [];
-
-    let html = "<h3>Incorrect Questions</h3>";
+    let html = "<h3>Incorrect / Unattempted Questions</h3>";
 
     if (list.length === 0) {
-        html += "<p>No incorrect answers</p>";
+        html += "<p>No incorrect or unattempted answers</p>";
     } else {
         for (let q of list) {
+            // Checks if the user left it blank
+            let isBlank = !q.userAnswer || q.userAnswer.trim() === "";
+            
+            // ⭐ FIX: Safety text-escaping so code terms like <script> print instead of execution crashing
+            let cleanQuestion = (q.question || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let cleanChoice = (q.userAnswer || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let cleanCorrect = (q.correctAnswer || q.correctOption || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            let displayChoice = isBlank 
+                ? `<span style="color: #c62828; font-weight: bold;">Not Attempted</span>` 
+                : `<span style="color: #c62828;">${cleanChoice}</span>`;
+
             html += `
                 <div class="question-box">
-                    <b>Question:</b> ${q.question}<br>
-                    <b>Your Answer:</b> ${q.userAnswer}<br>
-                    <b>Correct Answer:</b> ${q.correctAnswer}
+                    <b>Question:</b> ${cleanQuestion}<br>
+                    <b>Your Answer:</b> ${displayChoice}<br>
+                    <span style="color: #2e7d32;"><b>Correct Answer:</b> ${cleanCorrect}</span>
                 </div>
             `;
         }
     }
-
     document.getElementById("reviewArea").innerHTML = html;
 }
-
-fetch("/admin/questions")
-.then(res => res.json())
-.then(data => {
-    let totalQ = data.length;
-    let totalMinutes = Math.ceil((totalQ * 30) / 60);
-
-    document.getElementById("totalQ").innerText = totalQ;
-    document.getElementById("totalTime").innerText =
-        totalMinutes + (totalMinutes === 1 ? " minute" : " minutes");
-});
 </script>
-
 </body>
 </html>
