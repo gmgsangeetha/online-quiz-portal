@@ -25,10 +25,11 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
 ---
 
 ### Admin Side
+- Admin needs to login first.
 - Add multiple questions at once using formatted input
 - View all questions
 - Delete questions individually
-- View all quiz results using endpoint
+- View all quiz results 
 - Clear all results when needed
 
 ---
@@ -67,7 +68,7 @@ Each result includes:
 
 These endpoints are intended for internal/admin use only. They help in monitoring quiz attempts and managing results **without requiring direct database access**.
 
-⚠️ Note: In a production environment, these endpoints should be protected using proper authentication and authorization to prevent unauthorized access, especially for sensitive operations like deleting all results.
+⚠️ Note: ⚠️ Note: These URLs are fully secured and can only be accessed if the administrator is actively logged in. If anyone attempts to visit or guess these endpoints directly through the browser address bar without logging in, the server will block them instantly and return an "HTTP 401 Unauthorized" access error.
 
 ---
 
@@ -143,7 +144,7 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 
 ## Note
 
-This project does not include an authentication system.
+This project does not include an authentication system for students since it a simple quiz portal.
 
 Users are identified using name input only.
 
@@ -152,7 +153,7 @@ The system allows quiz reattempts on page refresh.
 ---
 ## Future Scope
 
-- Add secure login and user authentication
+- Add secure login and user authentication (for students,as for admin it is already implemented)
 - Prevent reattempts using server-side session tracking
 - Add timer pause/resume protection
 - Store full attempt history per user
