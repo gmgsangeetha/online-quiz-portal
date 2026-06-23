@@ -269,8 +269,10 @@ window.onload = function () {
                 
                 <button onclick="showCorrect()">Show Correct</button>
                 <button onclick="showIncorrect()">Show Incorrect</button>
+                
                 <br><br>
-                <button onclick="restartQuizPortal()" style="background:#2e7d32; width:100%; font-weight:bold;">Take Quiz Again</button>
+                <button onclick="restartQuizPortal()" style="background: #2e7d32; width: 100%; margin-top: 10px; font-weight: bold; padding: 12px; transition: 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">Take Quiz Again</button>
+
                 
                 <div id="reviewArea"></div>
             </div>
@@ -506,7 +508,8 @@ function submitQuiz() {
                 <button onclick="showIncorrect()">Show Incorrect</button>
                 
                 <br><br>
-                <button onclick="restartQuizPortal()" style="background: #444; width: 100%; margin-top: 10px; font-weight: bold;">Take Quiz Again / Back to Start</button>
+                <button onclick="restartQuizPortal()" style="background: #2e7d32; width: 100%; margin-top: 10px; font-weight: bold; padding: 12px; transition: 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">Take Quiz Again</button>
+
                 
                 <div id="reviewArea"></div>
             </div>
