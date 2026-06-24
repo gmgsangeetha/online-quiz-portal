@@ -144,9 +144,9 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 
 ## Note
 
-This project does not include an authentication system for students since it a simple quiz portal.
-Users are identified using name input only.
-Admin can add, delete, view questions only if he/she has logged in .
+- This project does not include an authentication system for students since it a simple quiz portal.
+- Users are identified using name input only.
+- Admin can add, delete, view questions only if he/she has logged in .
 > 🔒 **Admin Security Note:** Admin login credentials are maintained secretly to avoid any misuse by others. Hence, if anybody is interested to view the project's administrative features or live dashboards, please contact me via **[LinkedIn](https://linkedin.com/in/gmgsangeetha)** to request temporary access.
 
 ---
