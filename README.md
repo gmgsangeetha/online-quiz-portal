@@ -68,7 +68,7 @@ Each result includes:
 
 These endpoints are intended for internal/admin use only. They help in monitoring quiz attempts and managing results **without requiring direct database access**.
 
-⚠️ Note: ⚠️ Note: These URLs are fully secured and can only be accessed if the administrator is actively logged in. If anyone attempts to visit or guess these endpoints directly through the browser address bar without logging in, the server will block them instantly and return an "HTTP 401 Unauthorized" access error.
+⚠️ Note: These URLs are fully secured and can only be accessed if the administrator is actively logged in. If anyone attempts to visit or guess these endpoints directly through the browser address bar without logging in, the server will block them instantly and return an "HTTP 401 Unauthorized" access error.
 
 ---
 
@@ -145,16 +145,14 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 ## Note
 
 This project does not include an authentication system for students since it a simple quiz portal.
-
 Users are identified using name input only.
-
-The system allows quiz reattempts on page refresh.
+Admin can add, delete, view questions only if he/she has logged in .
+> 🔒 **Admin Security Note:** Admin login credentials are maintained secretly to avoid any misuse by others. Hence, if anybody is interested to view the project's administrative features or live dashboards, please contact me via **[LinkedIn](https://linkedin.com/in/gmgsangeetha)** to request temporary access.
 
 ---
 ## Future Scope
 
-- Add secure login and user authentication (for students,as for admin it is already implemented)
-- Prevent reattempts using server-side session tracking
+- Add secure login and user authentication for students
 - Add timer pause/resume protection
 - Store full attempt history per user
 - Improve UI with leaderboard and analytics
@@ -164,7 +162,7 @@ The system allows quiz reattempts on page refresh.
 ## 🔗 Live Project Links
 
 -  Student Quiz Portal: https://online-quiz-portal-5pax.onrender.com/
--  Admin Dashboard: https://online-quiz-portal-5pax.onrender.com/admin.html
+-  Admin Dashboard: https://online-quiz-portal-5pax.onrender.com/admin-login.html
 
 ---
 ## Purpose of the Project
