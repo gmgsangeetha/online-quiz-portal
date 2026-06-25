@@ -49,28 +49,6 @@
         button:hover {
             background: #062c6e;
         }
-        
-        /* 👁️ Added eye positioning rules purely on top of your styles */
-        .password-container {
-            position: relative;
-            width: 100%;
-        }
-        .password-container input {
-            padding-right: 40px;
-        }
-        .toggle-eye {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            padding: 0;
-            margin: 0;
-            color: #666;
-        }
     </style>
 </head>
 <body>
@@ -78,30 +56,11 @@
 <div class="login-card">
     <h2>Admin Portal Login</h2>
     <input type="text" id="username" placeholder="Enter Username">
-    
-    <!-- 👁️ Wrapped your password input field safely with the visibility toggle button -->
-    <div class="password-container">
-        <input type="password" id="password" placeholder="Enter Password">
-        <button type="button" class="toggle-eye" id="eyeIcon" onclick="togglePassword()">👁️</button>
-    </div>
-    
+    <input type="password" id="password" placeholder="Enter Password">
     <button onclick="loginAdmin()">Login</button>
 </div>
 
 <script>
-// 👁️ Added toggle function purely to change field masking state
-function togglePassword() {
-    let pInput = document.getElementById("password");
-    let eye = document.getElementById("eyeIcon");
-    if (pInput.type === "password") {
-        pInput.type = "text";
-        eye.innerText = "🙈";
-    } else {
-        pInput.type = "password";
-        eye.innerText = "👁️";
-    }
-}
-
 function loginAdmin() {
     let u = document.getElementById("username").value;
     let p = document.getElementById("password").value;
