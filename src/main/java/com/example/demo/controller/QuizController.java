@@ -10,11 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @RestController
-// ⭐ Updated CORS to explicitly support cookie-based session handshakes across origins
 @CrossOrigin(origins = {"http://localhost:8080", "https://onrender.com"}, allowCredentials = "true")
 public class QuizController {
 
@@ -28,15 +28,51 @@ public class QuizController {
         return service.startQuiz(user);
     }
 
+    // ⭐ SINGLE TIME SUBMISSION: Handled safely using simple if-conditions and native HTTP Session
     @PostMapping("/quiz/submit")
-    public Result submit(@RequestParam String user,
-                         @RequestBody List<String> answers) {
-        return service.submitQuiz(user, answers);
+    public ResponseEntity<?> submit(@RequestParam String user,
+                                    @RequestBody List<String> answers,
+                                    HttpSession session) {
+        
+        // Check if this student has already submitted in this session
+        if (session.getAttribute("status_" + user) != null) {
+            // If they already submitted, just return their existing result instead of saving again
+            Result existingResult = service.getResult(user);
+            return ResponseEntity.ok(existingResult);
+        }
+
+        // First time submitting? Process the quiz normally
+        Result result = service.submitQuiz(user, answers);
+        
+        // Immediately save a flag in the session memory marking them as "submitted"
+        session.setAttribute("status_" + user, "submitted");
+        
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/quiz/result")
     public Result result(@RequestParam String user) {
         return service.getResult(user);
+    }
+
+    // ⭐ VIEW PAST ATTEMPTS: Uses a basic for-each loop and a simple list (No advanced streams)
+    @GetMapping("/quiz/past-attempts")
+    public List<ResultEntity> pastAttempts(@RequestParam String user) {
+        // 1. Fetch all records from the database
+        List<ResultEntity> allResults = service.getAllResults();
+        
+        // 2. Create a clean empty list to hold this specific student's results
+        List<ResultEntity> filteredResults = new ArrayList<>();
+        
+        // 3. Simple for-each loop to find matching usernames
+        for (ResultEntity r : allResults) {
+            if (r.getUserName() != null && r.getUserName().equalsIgnoreCase(user)) {
+                filteredResults.add(r); // Add matching attempt to our list
+            }
+        }
+        
+        // 4. Return the simple list back to the frontend
+        return filteredResults;
     }
 
     // ================= ADMIN CREDENTIAL VALIDATION =================
