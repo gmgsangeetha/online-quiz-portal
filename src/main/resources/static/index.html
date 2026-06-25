@@ -479,27 +479,31 @@ function executeSubmission() {
         renderResultsView();
     });
 }
-
 /* ===================== RESULTS SUMMARY CARD VIEW ===================== */
 function renderResultsView() {
     let data = window.resultData;
 
-    // ✂️ CLEAN SEPARATION: Splits "Ganga (ganga@gmail.com)" into separate pieces perfectly
+    // ✂️ CLEAN EXTRACTION: Separates "Ganga (ganga@gmail.com)" using dynamic extraction
     let displayName = "N/A";
     let displayEmail = "N/A";
 
-    if (combinedIdentifier && combinedIdentifier.indexOf(" (") !== -1) {
-        let parts = combinedIdentifier.split(" (");
-        displayName = parts[0]; // Extract the Name: "Ganga"
-        displayEmail = parts[1].replace(")", ""); // Extract the Email: "ganga@gmail.com"
-    } else {
-        displayName = combinedIdentifier || "N/A";
+    if (combinedIdentifier) {
+        // Find where the email bracket open character begins
+        let bracketIndex = combinedIdentifier.indexOf(" (");
+        
+        if (bracketIndex !== -1) {
+            displayName = combinedIdentifier.substring(0, bracketIndex).trim();
+            displayEmail = combinedIdentifier.substring(bracketIndex + 2, combinedIdentifier.length - 1).trim();
+        } else {
+            displayName = combinedIdentifier;
+            displayEmail = "No email registered";
+        }
     }
 
     document.getElementById("quizArea").innerHTML = `
         <div class="question-box">
             <h2>Result Summary</h2>
-            <!-- SEPARATED DISPLAY FIELDS -->
+            <!-- 📧 Cleanly separated display fields -->
             <p><b>Candidate Name:</b> ${displayName}</p>
             <p><b>Email Address:</b> ${displayEmail}</p>
             <p><b>Time Taken:</b> ${timeTaken}</p>
