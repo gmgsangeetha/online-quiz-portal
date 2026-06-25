@@ -9,7 +9,7 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
 ## Key Features
 
 ### Student Side
-- Enter name and start quiz instantly (no login required)
+- Enter name, email and start quiz instantly (no login required)
 - Dynamic question loading from backend
 - Timer-based quiz (30 seconds per question)
 - Auto-submit when time ends
@@ -21,6 +21,7 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
   - "Show Correct" button
   - "Show Incorrect" button
 - Automatic result evaluation and scoring
+- Can view past attempts summary
 
 ---
 
