@@ -141,17 +141,31 @@ public class QuizController {
         StringBuilder sb = new StringBuilder();
 
         for (ResultEntity r : results) {
+            String rawUser = r.getUserName() != null ? r.getUserName() : "N/A";
+            String parsedName = rawUser;
+            String parsedEmail = "No email registered";
+
+            
+            int bracketIndex = rawUser.indexOf(" (");
+            if (bracketIndex != -1) {
+                parsedName = rawUser.substring(0, bracketIndex).trim();
+                parsedEmail = rawUser.substring(bracketIndex + 2, rawUser.length() - 1).trim();
+            }
+
+            // Append the structured data payload with the separate email field
             sb.append("{\"id\":").append(r.getId())
-              .append(", \"userName\":\"").append(r.getUserName()).append("\"")
+              .append(", \"userName\":\"").append(parsedName).append("\"")
+              .append(", \"email\":\"").append(parsedEmail).append("\"") 
               .append(", \"score\":").append(r.getScore())
               .append(", \"totalQuestions\":").append(r.getTotal())
               .append(", \"status\":\"").append(r.getStatus()).append("\"")
               .append(", \"attemptTime\":\"").append(r.getAttemptTime()).append("\"")
-              .append("}\n\n"); // Your exact requested output format
+              .append("}\n\n"); 
         }
 
         return ResponseEntity.ok("<pre>" + sb.toString() + "</pre>");
     }
+
     
     @GetMapping("/admin/clear-results")
     public ResponseEntity<String> clearResults(HttpSession session) {
