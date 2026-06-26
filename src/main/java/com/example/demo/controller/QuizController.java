@@ -28,25 +28,18 @@ public class QuizController {
         return service.startQuiz(user);
     }
 
-    // ⭐ SINGLE TIME SUBMISSION: Handled safely using simple if-conditions and native HTTP Session
     @PostMapping("/quiz/submit")
     public ResponseEntity<?> submit(@RequestParam String user,
                                     @RequestBody List<String> answers,
                                     HttpSession session) {
         
-        // Check if this student has already submitted in this session
         if (session.getAttribute("status_" + user) != null) {
-            // If they already submitted, just return their existing result instead of saving again
             Result existingResult = service.getResult(user);
             return ResponseEntity.ok(existingResult);
         }
 
-        // First time submitting? Process the quiz normally
         Result result = service.submitQuiz(user, answers);
-        
-        // Immediately save a flag in the session memory marking them as "submitted"
         session.setAttribute("status_" + user, "submitted");
-        
         return ResponseEntity.ok(result);
     }
 
@@ -55,23 +48,16 @@ public class QuizController {
         return service.getResult(user);
     }
 
-    // ⭐ VIEW PAST ATTEMPTS: Uses a basic for-each loop and a simple list (No advanced streams)
     @GetMapping("/quiz/past-attempts")
     public List<ResultEntity> pastAttempts(@RequestParam String user) {
-        // 1. Fetch all records from the database
         List<ResultEntity> allResults = service.getAllResults();
-        
-        // 2. Create a clean empty list to hold this specific student's results
         List<ResultEntity> filteredResults = new ArrayList<>();
         
-        // 3. Simple for-each loop to find matching usernames
         for (ResultEntity r : allResults) {
             if (r.getUserName() != null && r.getUserName().equalsIgnoreCase(user)) {
-                filteredResults.add(r); // Add matching attempt to our list
+                filteredResults.add(r);
             }
         }
-        
-        // 4. Return the simple list back to the frontend
         return filteredResults;
     }
 
@@ -83,7 +69,7 @@ public class QuizController {
         String pass = data.get("password");
 
         if ("admin".equals(user) && "admin123".equals(pass)) {
-            session.setAttribute("adminLoggedIn", true); // Create secure native session flag
+            session.setAttribute("adminLoggedIn", true);
             return ResponseEntity.ok("success");
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("fail");
@@ -101,12 +87,24 @@ public class QuizController {
         return session == null || session.getAttribute("adminLoggedIn") == null;
     }
 
+    // PLAIN TEXT ACCESS DENIED RESPONSE LAYOUT WITH BOLD BLACK HEADING
+    private ResponseEntity<String> getAccessDeniedResponse() {
+        String accessDeniedHtml = "<html>" +
+            "<head><meta charset='UTF-8'><title>Access Denied</title></head>" +
+            "<body>" +
+            "  <h1 style='color:black; font-family:Arial; font-weight:bold;'>Access Denied</h1>" +
+            "  <p style='font-family:Arial;'>Unauthorized access -  Login is required to view this page.</p>" +
+            "</body>" +
+            "</html>";
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(accessDeniedHtml);
+    }
+
     // ================= PROTECTED ADMIN ACTIONS =================
 
     @GetMapping("/admin/questions")
     public ResponseEntity<?> allQuestions(HttpSession session) {
         if (isNotAdmin(session)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return getAccessDeniedResponse(); // 🔒 Standardized Plain Access Denied
         }
         return ResponseEntity.ok(service.getAllQuestions());
     }
@@ -114,7 +112,7 @@ public class QuizController {
     @PostMapping("/admin/add")
     public ResponseEntity<String> add(@RequestBody Question question, HttpSession session) {
         if (isNotAdmin(session)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return getAccessDeniedResponse(); // 🔒 Standardized Plain Access Denied
         }
         service.addQuestion(question);
         return ResponseEntity.ok("Question added successfully");
@@ -123,7 +121,7 @@ public class QuizController {
     @DeleteMapping("/admin/delete/{id}")
     public ResponseEntity<String> delete(@PathVariable Integer id, HttpSession session) {
         if (isNotAdmin(session)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return getAccessDeniedResponse(); // 🔒 Standardized Plain Access Denied
         }
         service.deleteQuestion(id);
         return ResponseEntity.ok("Deleted successfully");
@@ -131,23 +129,26 @@ public class QuizController {
     
     @GetMapping("/admin/results")
     public ResponseEntity<String> allResults(HttpSession session) {
-        // Blocks anyone guessing the endpoint URL from spying on student data
         if (isNotAdmin(session)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("<h1>Access Denied</h1><p>Authentication required to view system data metrics.</p>");
+            return getAccessDeniedResponse(); // 🔒 Standardized Plain Access Denied
         }
 
         List<ResultEntity> results = service.getAllResults();
         StringBuilder sb = new StringBuilder();
 
-        // 🌐 CONTAINER: Inject character encoding and create a clean box layout container frame
         sb.append("<html><head><meta charset='UTF-8'><title>Admin - Quiz Results</title></head>")
           .append("<body style='font-family:Arial, sans-serif; background:#eef2f7; margin:0; padding:20px;'>")
           .append("<div style='max-width:95%; margin:auto; background:white; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);'>")
           .append("<h3 style='color:#0b3d91; margin-top:0;'>Student Quiz Results</h3>")
           
-          // 🔍 UNIVERSAL LIVE KEYWORD FILTER INPUT BAR
-          .append("<input type='text' id='queryInput' placeholder='🔍 Type name, email, or status to filter JSON rows...' style='width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;'>")
+          //  SEARCH BAR WITH RIGHT-ALIGNED MAGNIFYING SYMBOL
+          .append("<div style='position:relative; width:100%; margin-bottom:15px;'>")
+          .append("  <input type='text' id='queryInput' placeholder='Type name, email, or status to filter JSON rows...' style='width:100%; padding:10px; padding-right:35px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;'>")
+          .append("  <span style='position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#777; pointer-events:none;'>🔍</span>")
+          .append("</div>")
+          
+          //  EMPTY STATE TEXT LOG PLACEHOLDER
+          .append("<div id='emptySearchAlert' style='display:none; padding:10px 0 15px 0; color:#b71c1c; font-family:Arial; font-weight:bold; font-size:14px;'>No results found for this search</div>")
           .append("<div id='logWrapper'>");
 
         for (ResultEntity r : results) {
@@ -161,8 +162,6 @@ public class QuizController {
                 parsedEmail = rawUser.substring(bracketIndex + 2, rawUser.length() - 1).trim();
             }
 
-            // 🔒 STRIP ID DISPLAY: The ID parameter chunk is completely skipped right here!
-            // 🎨 SINGLE ROW DISPLAY FIX: white-space:nowrap keeps the JSON text locked entirely on a single straight line
             sb.append("<div class='json-row' style='margin-bottom:6px; background:#f4f6f8; padding:10px; border-radius:4px; font-family:monospace; font-size:13px; white-space:nowrap; overflow-x:auto;'>")
               .append("{\"userName\":\"").append(parsedName).append("\"")
               .append(", \"email\":\"").append(parsedEmail).append("\"") 
@@ -175,13 +174,24 @@ public class QuizController {
 
         sb.append("</div></div>");
 
-        // 🎯 4-LINE LIVE SEARCH FILTER SCRIPT
+        // LIVE FILTER LOOP TRACKER WITH CONDITIONAL EMPTY SEARCH LOGIC
         sb.append("<script>")
           .append("document.getElementById('queryInput').onkeyup = function() {")
           .append("  let q = this.value.toLowerCase().trim();")
-          .append("  document.querySelectorAll('.json-row').forEach(row => {")
-          .append("    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';")
+          .append("  let matchCount = 0;")
+          .append("  let rows = document.querySelectorAll('.json-row');")
+          
+          .append("  rows.forEach(row => {")
+          .append("    if (row.textContent.toLowerCase().includes(q)) {")
+          .append("      row.style.display = '';")
+          .append("      matchCount++;")
+          .append("    } else {")
+          .append("      row.style.display = 'none';")
+          .append("    }")
           .append("  });")
+          
+          // Triggers your exact dynamic empty state phrase when match loops drop to zero matches
+          .append("  document.getElementById('emptySearchAlert').style.display = (matchCount === 0 && rows.length > 0) ? 'block' : 'none';")
           .append("};")
           .append("</script></body></html>");
 
@@ -191,7 +201,7 @@ public class QuizController {
     @GetMapping("/admin/clear-results")
     public ResponseEntity<String> clearResults(HttpSession session) {
         if (isNotAdmin(session)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return getAccessDeniedResponse(); // 🔒 Standardized Plain Access Denied
         }
         service.deleteAllResults();
         return ResponseEntity.ok("All results deleted");

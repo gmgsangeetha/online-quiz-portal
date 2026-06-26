@@ -130,15 +130,22 @@ ANS: Java Virtual Machine<br><br>
 </div>
 <script>
 
-// 🔒 STARTUP ROUTINE FIX: Keeps your file completely original, but stops auto-loading the questions.
+/* ===================== SECURE VIEW STARTUP VALIDATION ===================== */
 window.onload = function () {
-    // Silent security validation check to make sure admin is logged in, but doesn't fill the question list.
+    // Quietly verify with the backend if the admin session cookie is currently valid
     fetch("/admin/questions", { credentials: "include" })
     .then(res => {
         if (res.status === 401) {
             window.location.href = "admin-login.html";
         }
     }).catch(e => console.log(e));
+};
+
+/* =====================  AUTOMATIC TAB CLOSURE SECURITY LOCK ===================== */
+window.onbeforeunload = function () {
+    // The exact millisecond the tab or browser window is closed, fire a beacon to destroy the backend session
+    // This leaves page refreshes completely working, but terminates the cookie if the tab is truly shut down!
+    navigator.sendBeacon("/admin/logout");
 };
 
 function logoutAdmin() {
