@@ -140,33 +140,54 @@ public class QuizController {
         List<ResultEntity> results = service.getAllResults();
         StringBuilder sb = new StringBuilder();
 
+        // 🌐 CONTAINER: Inject character encoding and create a clean box layout container frame
+        sb.append("<html><head><meta charset='UTF-8'><title>Admin - Quiz Results</title></head>")
+          .append("<body style='font-family:Arial, sans-serif; background:#eef2f7; margin:0; padding:20px;'>")
+          .append("<div style='max-width:95%; margin:auto; background:white; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);'>")
+          .append("<h3 style='color:#0b3d91; margin-top:0;'>Student Quiz Results</h3>")
+          
+          // 🔍 UNIVERSAL LIVE KEYWORD FILTER INPUT BAR
+          .append("<input type='text' id='queryInput' placeholder='🔍 Type name, email, or status to filter JSON rows...' style='width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:14px;'>")
+          .append("<div id='logWrapper'>");
+
         for (ResultEntity r : results) {
             String rawUser = r.getUserName() != null ? r.getUserName() : "N/A";
             String parsedName = rawUser;
             String parsedEmail = "No email registered";
 
-            
             int bracketIndex = rawUser.indexOf(" (");
             if (bracketIndex != -1) {
                 parsedName = rawUser.substring(0, bracketIndex).trim();
                 parsedEmail = rawUser.substring(bracketIndex + 2, rawUser.length() - 1).trim();
             }
 
-            // Append the structured data payload with the separate email field
-            sb.append("{\"id\":").append(r.getId())
-              .append(", \"userName\":\"").append(parsedName).append("\"")
+            // 🔒 STRIP ID DISPLAY: The ID parameter chunk is completely skipped right here!
+            // 🎨 SINGLE ROW DISPLAY FIX: white-space:nowrap keeps the JSON text locked entirely on a single straight line
+            sb.append("<div class='json-row' style='margin-bottom:6px; background:#f4f6f8; padding:10px; border-radius:4px; font-family:monospace; font-size:13px; white-space:nowrap; overflow-x:auto;'>")
+              .append("{\"userName\":\"").append(parsedName).append("\"")
               .append(", \"email\":\"").append(parsedEmail).append("\"") 
               .append(", \"score\":").append(r.getScore())
               .append(", \"totalQuestions\":").append(r.getTotal())
               .append(", \"status\":\"").append(r.getStatus()).append("\"")
               .append(", \"attemptTime\":\"").append(r.getAttemptTime()).append("\"")
-              .append("}\n\n"); 
+              .append("}</div>"); 
         }
 
-        return ResponseEntity.ok("<pre>" + sb.toString() + "</pre>");
+        sb.append("</div></div>");
+
+        // 🎯 4-LINE LIVE SEARCH FILTER SCRIPT
+        sb.append("<script>")
+          .append("document.getElementById('queryInput').onkeyup = function() {")
+          .append("  let q = this.value.toLowerCase().trim();")
+          .append("  document.querySelectorAll('.json-row').forEach(row => {")
+          .append("    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';")
+          .append("  });")
+          .append("};")
+          .append("</script></body></html>");
+
+        return ResponseEntity.ok(sb.toString());
     }
 
-    
     @GetMapping("/admin/clear-results")
     public ResponseEntity<String> clearResults(HttpSession session) {
         if (isNotAdmin(session)) {
