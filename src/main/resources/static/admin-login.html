@@ -78,6 +78,8 @@ function loginAdmin() {
     })
     .then(res => {
         if (res.ok) {
+            //  THE TAB CLOSE FIX: Save a temporary token that dies automatically when this tab is closed
+            sessionStorage.setItem("adminSessionActive", "true");
             window.location.href = "admin.html"; // Redirects to question management panel on success
         } else {
             alert("Invalid username or password");
