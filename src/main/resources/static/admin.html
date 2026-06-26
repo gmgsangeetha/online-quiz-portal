@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8"> 
     <title>Admin - Question Management</title>
 
     <style>
@@ -107,10 +108,10 @@ D: None<br>
 ANS: Java Virtual Machine<br><br>
 
         <b>Rules:</b><br>
-        &#10004; Use proper format<br>
-        &#10004; Separate with ---<br>
-        &#10004; The answer must be copied exactly from the correct option text (case-sensitive)
-
+        - Use proper format<br>
+        - Separate with ---<br>
+        - The answer must be copied exactly from the correct option text (case-sensitive)
+       
     </div>
 
     <!-- INPUT AREA -->
@@ -122,15 +123,22 @@ ANS: Java Virtual Machine<br><br>
     <button onclick="loadQuestions()">View Questions</button>
     <button onclick="window.open('/admin/results', '_blank')" style="background: #2e7d32;">View Results</button>
     <button onclick="clearResults()" style="background: #e65100;">Clear Results</button>
-
+    <button onclick="clearAllQuestions()" style="background: #b71c1c;">Delete All Questions</button>
+    
     <div id="list"></div>
 
 </div>
-
 <script>
 
+// 🔒 STARTUP ROUTINE FIX: Keeps your file completely original, but stops auto-loading the questions.
 window.onload = function () {
-    loadQuestions(true); // Quiet check on window entry to protect against direct access
+    // Silent security validation check to make sure admin is logged in, but doesn't fill the question list.
+    fetch("/admin/questions", { credentials: "include" })
+    .then(res => {
+        if (res.status === 401) {
+            window.location.href = "admin-login.html";
+        }
+    }).catch(e => console.log(e));
 };
 
 function logoutAdmin() {
@@ -155,6 +163,7 @@ function clearResults() {
         if(msg) alert(msg);
     });
 }
+
 /* ===================== ADD ===================== */
 function addQuestion() {
 
@@ -213,7 +222,6 @@ function addQuestion() {
 
         if (question && options[0] && options[1] && options[2] && options[3] && answer) {
 
-            // ⭐ FIXED: Mapped variable structure directly to match your Java property 'correctAnswer'
             let q = {
                 question: question.trim(),
                 option1: options[0].trim(),
@@ -240,8 +248,6 @@ function addQuestion() {
         })
         .catch(() => alert("Error adding questions"));
 }
-
-/* ===================== VIEW ===================== */
 /* ===================== VIEW ===================== */
 function loadQuestions(isInitialCheck = false) {
 
@@ -265,7 +271,6 @@ function loadQuestions(isInitialCheck = false) {
             
             let verifiedAns = q.correctAnswer || "Not found";
 
-            // ⭐ PLACE THE FIX HERE: This stops <script> from breaking the HTML rendering loop
             let opt1Clean = q.option1.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             let opt2Clean = q.option2.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             let opt3Clean = q.option3.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -285,14 +290,12 @@ function loadQuestions(isInitialCheck = false) {
         document.getElementById("list").innerHTML = html;
     })
     .catch((err) => {
-        if (!isInitialCheck) {
-            console.log("Loading error handled securely: ", err);
-        }
+        console.log(err);
     });
 }
 
 
-/* ===================== DELETE ===================== */
+/* ===================== DELETE INDIVIDUAL QUESTION ===================== */
 function deleteQuestion(id) {
 
     if (!confirm("Are you sure you want to delete this question?")) return;
@@ -311,7 +314,121 @@ function deleteQuestion(id) {
     })
     .catch(() => alert("Delete failed"));
 }
+  /* ===================== DELETE ALL QUESTIONS ===================== */
+  
+function clearAllQuestions() {
+    // 1. Pop up ONLY ONE clean confirmation box asking the admin
+    if (!confirm("Do you want to delete all questions?")) return;
+
+    // 2. Find all the question IDs currently loaded on the page
+    // Your original code renders buttons exactly like this: onclick="deleteQuestion(q.id)"
+    // We can extract those raw IDs directly from your button parameters!
+    let deleteButtons = document.querySelectorAll("#list .delete-btn");
+
+    if (deleteButtons.length === 0) {
+        alert("No questions found to delete.");
+        return;
+    }
+
+    let deleteRequests = [];
+
+    // 3. Silently loop and push a direct background delete request for each question ID
+    deleteButtons.forEach(btn => {
+        // Extract the id number hidden inside your onclick string parameter, e.g., "deleteQuestion(42)" -> "42"
+        let idMatch = btn.getAttribute("onclick").match(/\d+/);
+        if (idMatch) {
+            let questionId = idMatch[0];
+            
+            // Push a clean backend request without triggering your individual popups!
+            deleteRequests.push(
+                fetch("/admin/delete/" + questionId, {
+                    method: "DELETE",
+                    credentials: "include"
+                })
+            );
+        }
+    });
+
+    // 4. Wait for all background deletions to complete successfully in TiDB Cloud
+    Promise.all(deleteRequests)
+        .then(() => {
+            // 5. Clear out the visual list layout on the screen instantly
+            document.getElementById("list").innerHTML = "";
+            
+            // 6. Display your exact requested success message alert box!
+            alert("Successfully deleted all questions");
+        })
+        .catch(() => alert("Failed to clear some questions from the database."));
+}
+
+
+/* ===================== NEW TAB DISPLAY WITH REMOVED IDs & FILTER ===================== */
+function openFilteredResultsNewTab() {
+    fetch("/admin/results", { credentials: "include" })
+    .then(res => res.status === 401 ? window.location.href = "admin-login.html" : res.text())
+    .then(rawHtmlOutput => {
+        if (!rawHtmlOutput) return;
+
+        // Clean out any wrapping HTML tags generated by your QuizController
+        let cleanText = rawHtmlOutput.replace("<pre>", "").replace("</pre>", "").trim();
+        let lines = cleanText.split("\n");
+        let processedRowsHtml = "";
+
+        lines.forEach(line => {
+            let trimmed = line.trim();
+            if (trimmed.length > 5) {
+                let item = JSON.parse(trimmed);
+
+                // 🔒 HIDES ID FROM TEXT LAYOUT: Creates an object copy while completely skipping the ID key
+                let idStrippedRecord = {
+                    userName: item.userName,
+                    email: item.email,
+                    score: item.score,
+                    totalQuestions: item.totalQuestions,
+                    status: item.status,
+                    attemptTime: item.attemptTime
+                };
+
+                processedRowsHtml += `<div class="json-line-item" style="margin-bottom:6px; background:#f4f6f8; padding:10px; border-radius:4px; font-family:monospace; font-size:13px; word-break:break-all;">${JSON.stringify(idStrippedRecord)}</div>`;
+            }
+        });
+
+        // Open a blank new browser tab page layout window cleanly
+        let dynamicTab = window.open("", "_blank");
+
+        // Write the minimal layout with the keyword filter box directly to the new tab document
+        dynamicTab.document.write(`
+            <html>
+            <head>
+                <title>Admin - Quiz Results Ledger</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; background: #eef2f7; padding: 20px;">
+                <div style="max-width: 850px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <h3 style="color:#0b3d91; margin-top:0;">Student Quiz Results</h3>
+                    
+                    <!--  LIVE DYNAMIC INPUT FILTER BOX ON THE NEW TAB PAGE -->
+                    <input type="text" id="liveSearchInput" placeholder="🔍 Type name, email, or status to filter JSON rows..." style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+                    
+                    <div id="resultsLogContainer">${processedRowsHtml}</div>
+                </div>
+                <script>
+                    // Simple search filter function
+                    document.getElementById("liveSearchInput").onkeyup = function() {
+                        let query = this.value.toLowerCase().trim();
+                        document.querySelectorAll(".json-line-item").forEach(row => {
+                            row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+                        });
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        dynamicTab.document.close(); 
+    })
+    .catch(err => console.log(err));
+}
 
 </script>
 </body>
 </html>
+
