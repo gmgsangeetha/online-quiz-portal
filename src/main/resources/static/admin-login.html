@@ -56,8 +56,8 @@
 <div class="login-card">
     <h2>Admin Portal Login</h2>
     <input type="text" id="username" placeholder="Enter Username">
-    <input type="password" id="password" placeholder="Enter Password">
-    <button onclick="loginAdmin()">Login</button>
+   <div style="position: relative;"><input type="password" id="password" placeholder="Enter Password" style="padding-right:55px;"><span id="eyeIcon" onclick="this.textContent=document.getElementById('password').type==='password'?(document.getElementById('password').type='text','Hide'):(document.getElementById('password').type='password','Show')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 13px; color: black; user-select: none; font-family: Arial, sans-serif;">Show</span></div>
+   <button onclick="loginAdmin()">Login</button>
 </div>
 
 <script>
