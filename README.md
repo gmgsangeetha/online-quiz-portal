@@ -9,29 +9,42 @@ It allows users to attempt quizzes, view instant results, and provides an admin 
 ## Key Features
 
 ### Student Side
-- Enter name, email and start quiz instantly (no login required)
-- Dynamic question loading from backend
-- Timer-based quiz (30 seconds per question)
-- Auto-submit when time ends
-- Navigation using Previous / Next buttons
-- Instant result display after quiz submission
-- Displays total questions, correct answers, incorrect answers, and status(pass/fail)
-- Tracks total time taken by the student to attempt the quiz
+- Enter name and email to start the quiz instantly (no registration/login required).
+- Dynamic question loading from the backend.
+- Questions are shuffled for every attempt.
+- Timer-based quiz (30 seconds per question).
+- Auto-submit when the timer expires.
+- Navigation using Previous and Next buttons.
+- Browser Back button is restricted to prevent restarting the quiz.
+- Quiz state is preserved even if the page is refreshed.
+- Prevents duplicate submissions on page refresh.
+- Automatic quiz evaluation and score calculation.
+- Instant result display after quiz submission.
+- Displays:
+  - Total questions
+  - Correct answers
+  - Incorrect answers
+  - Pass/Fail status
+  - Total time taken to complete the quiz
 - Students can review answers using:
   - "Show Correct" button
   - "Show Incorrect" button
-- Automatic result evaluation and scoring
-- Can view past attempts summary
+- Students can take the quiz multiple times.
+- Students can view the summary of their current as well as previous attempts.
 
 ---
 
 ### Admin Side
-- Admin needs to login first.
-- Add multiple questions at once using formatted input
-- View all questions
-- Delete questions individually
-- View all quiz results 
-- Clear all results when needed
+- Secure admin login is required.
+- Protected admin endpoints (accessible only when the admin is logged in; otherwise, an "Access Denied" message is shown).
+- Add multiple questions at once using formatted bulk input.
+- View all questions.
+- Delete questions individually.
+- Delete all questions at once.
+- View all quiz results.
+- Search and filter results using any keyword.
+- Monitor all quiz attempts along with their timestamps.
+- Clear all results when needed.
 
 ---
 
@@ -146,7 +159,7 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 ## Note
 
 - This project does not include an authentication system for students since it a simple quiz portal.
-- Users are identified using name input only.
+- Users are identified using name input and email.
 - Admin can add, delete, view questions only if he/she has logged in .
 > 🔒 **Admin Security Note:** Admin login credentials are maintained secretly to avoid any misuse by others. Hence, if anybody is interested to view the project's administrative features or live dashboards, please contact me via **[LinkedIn](https://linkedin.com/in/gmgsangeetha)** to request temporary access.
 
@@ -154,8 +167,6 @@ GitHub → Render → Spring Boot Backend → TiDB Cloud Database
 ## Future Scope
 
 - Add secure login and user authentication for students
-- Add timer pause/resume protection
-- Store full attempt history per user
 - Improve UI with leaderboard and analytics
 - Add difficulty levels and categories for quizzes
 
